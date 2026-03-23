@@ -94,7 +94,10 @@ def main():
 
             # Visualize
             planner.visualize(
-                path, start, goal, filename="../output/robot_path_planner.png"
+                path,
+                start,
+                goal,
+                filename=f"output/{env_name}_robot_path_planner.png",
             )
         else:
             print("No path found!")

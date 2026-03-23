@@ -20,7 +20,8 @@ class RobotPathPlanner:
     ):
         """Setup the environment with obstacles"""
         self.avbn.add_obstacles(obstacles)
-        self.avbn.enlarge_obstacles(enlarge_iterations)
+        # self.avbn.enlarge_obstacles(enlarge_iterations)
+        self.avbn.enlarge_obstacles()
         self.avbn.build_network()
 
     def plan_path(
