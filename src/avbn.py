@@ -27,6 +27,8 @@ from typing import List, Tuple, Dict
 from collections import deque
 import matplotlib.pyplot as plt
 import os
+from numpy.typing import NDArray
+import pandas as pd
 
 
 class AVBN:
@@ -322,6 +324,7 @@ class AVBN:
         distance_matrix  : dict[i][j] = pixel distance along boundary
         """
         boundaries = self.find_voronoi_boundaries()
+        # self.plot_voronoi_boundaries()
         self.voronoi_boundaries = boundaries
         self.nodes = self.find_nodes(boundaries)
         self._build_connections()
@@ -450,7 +453,7 @@ class AVBN:
         plt.xlabel("X")
         plt.ylabel("Y")
 
-        plt.savefig("debug_plots/plot_obstacles.png")
+        plt.savefig("debug_plots/avbn_plot_obstacles.png")
         plt.close()
 
     def plot_network(self) -> None:
@@ -461,7 +464,8 @@ class AVBN:
         plt.figure(figsize=(8, 8))
 
         # --- Background: obstacle map ---
-        plt.imshow(self.obstacle_map, origin="lower", cmap="gray", alpha=0.5)
+        plt.imshow(self.obstacle_map, origin="lower", alpha=0.5)
+        # plt.imshow(self.obstacle_map, origin="lower", cmap="gray", alpha=0.5)
 
         # --- Plot Voronoi boundaries ---
         if self.voronoi_boundaries:
@@ -491,5 +495,107 @@ class AVBN:
 
         # --- Save figure ---
         os.makedirs("debug_plots", exist_ok=True)
-        plt.savefig("debug_plots/plot_network.png", dpi=300, bbox_inches="tight")
+        plt.savefig("debug_plots/avbn_plot_network.png", dpi=300, bbox_inches="tight")
+        plt.close()
+
+    def plot_obstacles_before_after(self, before: NDArray, after: NDArray) -> None:
+        os.makedirs("debug_plots", exist_ok=True)
+
+        fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+
+        # --- BEFORE ---
+        axes[0].imshow(before, origin="lower")
+        axes[0].set_title("Before Enlargement")
+        axes[0].set_xlabel("X")
+        axes[0].set_ylabel("Y")
+
+        # --- AFTER ---
+        axes[1].imshow(after, origin="lower")
+        axes[1].set_title("After Enlargement")
+        axes[1].set_xlabel("X")
+        axes[1].set_ylabel("Y")
+
+        plt.tight_layout()
+
+        plt.savefig(
+            "debug_plots/avbn_before_after_enlargement.png",
+            dpi=300,
+            bbox_inches="tight",
+        )
+        plt.close()
+
+    def plot_voronoi_boundaries(self) -> None:
+        boundaries = self.voronoi_boundaries.copy()
+
+        plt.figure(figsize=(8, 8))
+
+        # Background: Voronoi-labeled map
+        plt.imshow(self.obstacle_map, origin="lower", cmap="tab20")
+
+        # Overlay boundary points
+        if boundaries:
+            y = [p[0] for p in boundaries]
+            x = [p[1] for p in boundaries]
+            plt.scatter(x, y, s=1, color="red", label="Boundaries")
+
+        plt.title("Voronoi Boundaries (Overlay)")
+        plt.xlabel("X")
+        plt.ylabel("Y")
+        plt.legend()
+
+        plt.savefig(
+            "debug_plots/avbn_voronoi_boundaries_overlay.png",
+            dpi=300,
+            bbox_inches="tight",
+        )
+        plt.close()
+
+    def plot_distance_matrix(self):
+        n = len(self.nodes)
+        mat = np.full((n, n), np.nan)
+
+        for i in self.distance_matrix:
+            for j in self.distance_matrix[i]:
+                mat[i, j] = self.distance_matrix[i][j]
+
+        plt.figure(figsize=(6, 6))
+        plt.imshow(mat)
+        plt.colorbar(label="Distance")
+        plt.title("Distance Matrix")
+        plt.xlabel("Node")
+        plt.ylabel("Node")
+        plt.savefig("debug_plots/avbn_distance_matrix.png")
+        plt.close()
+
+    def plot_correlated_nodes_table(self) -> None:
+
+        if not self.node_connections:
+            raise ValueError("Node connections not built. Call build_network() first.")
+
+        data = []
+        for node, neighbors in self.node_connections.items():
+            data.append(
+                {
+                    "Node": node,
+                    "L_j (Connected Nodes)": str(neighbors),
+                    "l_j (Count)": len(neighbors),
+                }
+            )
+
+        df = pd.DataFrame(data)
+
+        # Plot as a table
+        fig, ax = plt.subplots(figsize=(8, len(df) * 0.5 + 2))
+        ax.axis("off")
+
+        table = ax.table(
+            cellText=df.values, colLabels=df.columns, cellLoc="center", loc="center"
+        )
+
+        table.auto_set_font_size(False)
+        table.set_fontsize(10)
+        table.scale(1, 1.5)
+
+        plt.title("Correlated Nodes Table (L_j)")
+        plt.savefig("debug_plots/avbn_correlated_nodes_table.png", bbox_inches="tight")
         plt.close()

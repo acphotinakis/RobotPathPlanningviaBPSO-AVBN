@@ -86,10 +86,18 @@ class RobotPathPlanner:
 
         """Add obstacles, enlarge them (Voronoi partition), build network."""
         self.avbn.add_obstacles(obstacles)
+        # Save a copy BEFORE enlargement
+        before = self.avbn.obstacle_map.copy()
         self.avbn.enlarge_obstacles()
+        # After enlargement
+        after = self.avbn.obstacle_map
+        self.avbn.plot_obstacles_before_after(before, after)
         self.avbn.plot_obstacles()
         self.avbn.build_network()
+        self.avbn.plot_distance_matrix()
+        self.avbn.plot_voronoi_boundaries()
         self.avbn.plot_network()
+        self.avbn.plot_correlated_nodes_table()
         import sys
 
         sys.exit(0)
