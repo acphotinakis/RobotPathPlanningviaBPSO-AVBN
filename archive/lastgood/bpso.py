@@ -118,7 +118,7 @@ class BPSO:
             if not available:
                 break
 
-            # Eq. (6): m = MOD(g_j, l_j)  → 0-based index into available
+            # Eq. (6): m = MOD(g_j, l_j)  --> 0-based index into available
             l_j = len(available)
             m = gene_value % l_j
 
@@ -151,7 +151,7 @@ class BPSO:
         Eqs. (1) and (2) with E = I = 1:
             λ_s = s / P
             μ_s = 1 − s / P
-        where s = P − rank  so that rank 0 (best) → s = P (max species).
+        where s = P − rank  so that rank 0 (best) --> s = P (max species).
         """
         P = self.pop_size
         rank_order = np.argsort(self.fitness)  # ascending: rank_order[0] = best
@@ -160,7 +160,7 @@ class BPSO:
         immigration_rates = [0.0] * P
 
         for rank, habitat_idx in enumerate(rank_order):
-            s = P - rank  # best habitat → s=P, worst → s=1
+            s = P - rank  # best habitat --> s=P, worst --> s=1
             emigration_rates[habitat_idx] = s / P
             immigration_rates[habitat_idx] = 1.0 - s / P
 
@@ -256,7 +256,7 @@ class BPSO:
             n1, n2 = path[idx], path[idx + 1]
             seg = distance_matrix.get(n1, {}).get(n2, None)
             if seg is None:
-                return 1e6  # disconnected → invalid path
+                return 1e6  # disconnected --> invalid path
             total_cost += seg
 
         alpha = 1000
@@ -274,16 +274,14 @@ class BPSO:
         distance_matrix: Dict[int, Dict[int, float]],
         start_node: int,
         end_node: int,
-    ) -> Tuple[List[int], float, dict]:
+    ) -> Tuple[List[int], float, Dict]:
         """Run BPSO; return (best_path_node_indices, best_cost, history)."""
         num_nodes = len(nodes)
         self.initialize_population(num_nodes)
 
-        history: Dict[str, List] = {
+        history: Dict[str, List[float]] = {
             "best_fitness": [],
             "mean_fitness": [],
-            "diversity": [],  # avg pairwise Hamming distance between habitats
-            "node_visit_counts": np.zeros(num_nodes, dtype=int),  # heatmap data
         }
 
         for generation in range(self.max_gen):
@@ -326,7 +324,7 @@ class BPSO:
 
             for i in range(self.pop_size):
                 if np.random.random() < emigration_rates[i]:
-                    # Habitat i is selected → receive an SIV from a source
+                    # Habitat i is selected --> receive an SIV from a source
                     # chosen proportionally to immigration rates μ_j
                     mu = np.array(immigration_rates)
                     mu_sum = mu.sum()
@@ -338,7 +336,7 @@ class BPSO:
                             if siv_idx < len(self.population[j]):
                                 new_population[i][siv_idx] = self.population[j][siv_idx]
                 else:
-                    # Not selected for immigration → PSO position update
+                    # Not selected for immigration --> PSO position update
                     if self.global_best:
                         self.population[i] = new_population[i]  # sync first
                         self.update_velocity_position(i)
@@ -357,33 +355,6 @@ class BPSO:
                 replace_idx = worst_two[slot]
                 self.population[replace_idx] = hab
                 self.fitness[replace_idx] = fit
-
-            # ---- Node visit counts (for heatmap) ------------------------
-            # Record which nodes appear in every individual's decoded path
-            for individual in self.population:
-                path = self.decode_path(
-                    individual, node_connections, start_node, end_node
-                )
-                for node_idx in path:
-                    if 0 <= node_idx < num_nodes:
-                        history["node_visit_counts"][node_idx] += 1
-
-            # ---- Population diversity ------------------------------------
-            # Average pairwise Hamming distance between all habitat SIV vectors
-            # (treating integer SIVs as a discrete genotype)
-            pop_arr = np.array(self.population, dtype=float)
-            n = len(pop_arr)
-            if n > 1:
-                # Vectorised: for each pair compute element-wise inequality
-                diffs = 0.0
-                for a in range(n):
-                    diffs += np.sum(pop_arr[a] != pop_arr, axis=1).sum()
-                # Each pair counted twice; normalise by genome length
-                genome_len = pop_arr.shape[1] if pop_arr.ndim == 2 else 1
-                avg_hamming = diffs / (n * (n - 1)) / genome_len
-            else:
-                avg_hamming = 0.0
-            history["diversity"].append(float(avg_hamming))
 
             # ---- Bookkeeping ---------------------------------------------
             history["best_fitness"].append(self.global_best_fitness)
