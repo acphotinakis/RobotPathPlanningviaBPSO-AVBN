@@ -87,7 +87,12 @@ class RobotPathPlanner:
         """Add obstacles, enlarge them (Voronoi partition), build network."""
         self.avbn.add_obstacles(obstacles)
         self.avbn.enlarge_obstacles()
+        self.avbn.plot_obstacles()
         self.avbn.build_network()
+        self.avbn.plot_network()
+        import sys
+
+        sys.exit(0)
 
     # =========================================================================
     # Section 3.2 — AVBN-based BPSO path-planning algorithm

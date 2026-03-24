@@ -25,6 +25,8 @@
 import numpy as np
 from typing import List, Tuple, Dict
 from collections import deque
+import matplotlib.pyplot as plt
+import os
 
 
 class AVBN:
@@ -436,3 +438,58 @@ class AVBN:
                         if nb in valid_pixels and nb not in visited:
                             visited.add(nb)
                             queue.append((nb[0], nb[1], current_path + [nb]))
+
+    def plot_obstacles(self):
+        plt.figure(figsize=(6, 6))
+
+        # Show obstacle map
+        plt.imshow(self.obstacle_map, origin="lower")
+
+        plt.colorbar(label="Obstacle ID")
+        plt.title("Obstacle Map")
+        plt.xlabel("X")
+        plt.ylabel("Y")
+
+        plt.savefig("debug_plots/plot_obstacles.png")
+        plt.close()
+
+    def plot_network(self) -> None:
+        # Ensure network exists
+        if not self.nodes:
+            raise ValueError("Network not built. Call build_network() first.")
+
+        plt.figure(figsize=(8, 8))
+
+        # --- Background: obstacle map ---
+        plt.imshow(self.obstacle_map, origin="lower", cmap="gray", alpha=0.5)
+
+        # --- Plot Voronoi boundaries ---
+        if self.voronoi_boundaries:
+            by = [p[0] for p in self.voronoi_boundaries]
+            bx = [p[1] for p in self.voronoi_boundaries]
+            plt.scatter(bx, by, s=1, color="blue", label="Boundaries")
+
+        # --- Plot nodes ---
+        node_x = [p[1] for p in self.nodes]
+        node_y = [p[0] for p in self.nodes]
+        plt.scatter(node_x, node_y, color="red", s=40, label="Nodes", zorder=3)
+
+        # --- Plot connections (edges) ---
+        for i in range(len(self.nodes)):
+            for j in self.node_connections.get(i, []):
+                if j in self.path_matrix.get(i, {}):
+                    path = self.path_matrix[i][j]
+                    px = [p[1] for p in path]
+                    py = [p[0] for p in path]
+                    plt.plot(px, py, color="green", linewidth=1)
+
+        # --- Formatting ---
+        plt.title("AVBN Network")
+        plt.xlabel("X")
+        plt.ylabel("Y")
+        plt.legend(loc="upper right")
+
+        # --- Save figure ---
+        os.makedirs("debug_plots", exist_ok=True)
+        plt.savefig("debug_plots/plot_network.png", dpi=300, bbox_inches="tight")
+        plt.close()
